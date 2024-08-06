@@ -20,6 +20,35 @@ GO
 USE Hospital;
 GO
 
+--Password validity
+DROP FUNCTION ValidPassword
+CREATE FUNCTION ValidPassword(@Password VARCHAR(255))
+RETURNS INT
+AS
+BEGIN
+	DECLARE @Result INT =1;
+
+	IF @Password NOT LIKE '%[A-Z]%'
+	SET @Result=101;
+
+	IF @Password NOT LIKE '%[a-z]%'
+	SET @Result=102;
+
+	IF @Password NOT LIKE '%[0-9]%'
+	SET @Result =103;
+
+	IF @Password NOT LIKE '%[^A-Za-z0-9]%'
+	SET @Result =104;
+
+	IF LEN(@Password) < 6
+	SET @Result=106;
+
+	RETURN @Result;
+END;
+GO
+
+
+
 /*
 signup table
 	SignUpID,
@@ -49,7 +78,7 @@ CREATE TABLE SignUp(
 	SignUpDate DATETIME DEFAULT GETDATE()
 );
 GO
-
+DROP PROCEDURE SingUpUser
 --Sign Up Stored Procedure
 CREATE PROCEDURE SingUpUser
 @UserName VARCHAR(255),
@@ -75,6 +104,35 @@ BEGIN
 		RAISERROR ('Email already exists.' , 16, 1);
 		RETURN;
 	END
+
+	IF dbo.ValidPassword(@Password) = 101
+    BEGIN
+        RAISERROR('Password must contain at least one uppercase letter.', 16, 1);
+        RETURN;
+    END
+
+	IF dbo.ValidPassword(@Password) = 102
+    BEGIN
+        RAISERROR('Password must contain at least one lowercase letter.', 16, 1);
+        RETURN;
+    END
+	IF dbo.ValidPassword(@Password) = 103
+    BEGIN
+        RAISERROR('Password must contain at least one number.', 16, 1);
+        RETURN;
+    END
+	IF dbo.ValidPassword(@Password) = 104
+    BEGIN
+        RAISERROR('Password must contain at least one special character.', 16, 1);
+        RETURN;
+    END
+	IF dbo.ValidPassword(@Password) = 106
+    BEGIN
+        RAISERROR('Password must be at least 6 characters long.', 16, 1);
+        RETURN;
+    END
+
+
 	DECLARE @Salt VARBINARY(16);
 	DECLARE @PasswordHash VARBINARY(64);
 
@@ -89,9 +147,9 @@ PRINT 'User signed up successfully';
 END;
 GO
 
-exec SingUpUser 'samaul','@Sam5Ul#','md','samaul','samaul@gmail.com','098765434','jhenaidah','admin';
+exec SingUpUser 'samaul23','@SA2SDF','md','samaul','sama1AulA2@gmail.com','098765434','jhenaidah','admin';
 go
-
+truncate table SignUp
 select * from SignUp;
 go
 --sign in 
@@ -151,17 +209,7 @@ go
 
 
 
---Check Password Stored Procedure
-CREATE PROCEDURE checkPassword
-@UserName VARCHAR(255)
-@Password VARCHAR(255)
-AS
-BEGIN
-	DECLARE @StoredPassword VARCHAR(255);
 
-	SELECT @
-END;
-GO
 --Role table
 CREATE TABLE Roles
 (
