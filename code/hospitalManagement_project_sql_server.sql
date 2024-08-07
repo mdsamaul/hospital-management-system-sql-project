@@ -21,7 +21,6 @@ USE Hospital;
 GO
 
 --Password validity
-DROP FUNCTION ValidPassword
 CREATE FUNCTION ValidPassword(@Password VARCHAR(255))
 RETURNS INT
 AS
@@ -47,7 +46,19 @@ BEGIN
 END;
 GO
 
+--valid email
+CREATE FUNCTION ValidEmail(@email VARCHAR(255))
+RETURNS BIT
+AS
+	BEGIN
+		DECLARE @Result BIT = 0;
+	IF RIGHT(@Email,10) ='@gmail.com'
+		SET @Result = 1;
+	RETURN @Result;
+	END;
+GO
 
+--select dbo.ValidEmail('samaul@gmail.comasd');
 
 /*
 signup table
@@ -63,7 +74,7 @@ signup table
 	Role,
 	SignUpDate
 */
-
+DROP TABLE SignUp
 CREATE TABLE SignUp(
 	SignUpID INT PRIMARY KEY IDENTITY(101,1) NOT NULL,
 	UserName VARCHAR(255) NOT NULL UNIQUE,
@@ -78,7 +89,8 @@ CREATE TABLE SignUp(
 	SignUpDate DATETIME DEFAULT GETDATE()
 );
 GO
-DROP PROCEDURE SingUpUser
+DROP PROCEDURE SingUpUser;
+GO
 --Sign Up Stored Procedure
 CREATE PROCEDURE SingUpUser
 @UserName VARCHAR(255),
@@ -132,6 +144,12 @@ BEGIN
         RETURN;
     END
 
+	IF dbo.ValidEmail(@Email) = 0
+		BEGIN
+			RAISERROR ('write valid email',16,1);
+			RETURN;
+		END
+
 
 	DECLARE @Salt VARBINARY(16);
 	DECLARE @PasswordHash VARBINARY(64);
@@ -149,7 +167,6 @@ GO
 
 exec SingUpUser 'samaul23','@SA2SDF','md','samaul','sama1AulA2@gmail.com','098765434','jhenaidah','admin';
 go
-truncate table SignUp
 select * from SignUp;
 go
 --sign in 
