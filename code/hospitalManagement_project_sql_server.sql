@@ -25,7 +25,7 @@ CREATE FUNCTION ValidPassword(@Password VARCHAR(255))
 RETURNS INT
 AS
 BEGIN
-	DECLARE @Result INT =1;
+	DECLARE @Result INT = 1;
 
 	IF @Password NOT LIKE '%[A-Z]%'
 	SET @Result=101;
@@ -46,13 +46,56 @@ BEGIN
 END;
 GO
 
+--throw validemail error masseges
+--drop function ErrorMassege
+
+CREATE FUNCTION ErrorMassege(@ErrorCode INT)
+RETURNS VARCHAR(255) 
+AS
+BEGIN 
+	DECLARE @Message VARCHAR(255);
+
+	IF @ErrorCode = 101
+    BEGIN
+        SET @Message = ('Password must contain at least one uppercase letter.');
+    END
+
+	IF @ErrorCode = 102
+    BEGIN
+         SET @Message = ('Password must contain at least one lowercase letter.');
+       
+    END
+	IF @ErrorCode = 103
+    BEGIN
+         SET @Message = ('Password must contain at least one number.');
+         
+    END
+	IF @ErrorCode = 104
+    BEGIN
+        SET @Message = ('Password must contain at least one special character.');
+       
+    END
+	IF @ErrorCode = 106
+    BEGIN
+          SET @Message = ('Password must be at least 6 characters long.');
+       
+    END
+	RETURN @Message;
+
+END;
+GO
+
+--select dbo.ErrorMassege(dbo.ValidPassword('a@sdf2asd'))
+
+
+--select dbo.ErrorMassege(101);
 --valid email
 CREATE FUNCTION ValidEmail(@email VARCHAR(255))
 RETURNS BIT
 AS
 	BEGIN
 		DECLARE @Result BIT = 0;
-	IF RIGHT(@Email,10) ='@gmail.com'
+		IF RIGHT(@Email,10) ='@gmail.com'
 		SET @Result = 1;
 	RETURN @Result;
 	END;
@@ -74,7 +117,7 @@ signup table
 	Role,
 	SignUpDate
 */
-DROP TABLE SignUp
+
 CREATE TABLE SignUp(
 	SignUpID INT PRIMARY KEY IDENTITY(101,1) NOT NULL,
 	UserName VARCHAR(255) NOT NULL UNIQUE,
@@ -89,9 +132,10 @@ CREATE TABLE SignUp(
 	SignUpDate DATETIME DEFAULT GETDATE()
 );
 GO
-DROP PROCEDURE SingUpUser;
-GO
+
 --Sign Up Stored Procedure
+drop procedure SingUpUser;
+go
 CREATE PROCEDURE SingUpUser
 @UserName VARCHAR(255),
 @Password VARCHAR(255),
@@ -117,32 +161,17 @@ BEGIN
 		RETURN;
 	END
 
-	IF dbo.ValidPassword(@Password) = 101
-    BEGIN
-        RAISERROR('Password must contain at least one uppercase letter.', 16, 1);
-        RETURN;
-    END
 
-	IF dbo.ValidPassword(@Password) = 102
-    BEGIN
-        RAISERROR('Password must contain at least one lowercase letter.', 16, 1);
-        RETURN;
-    END
-	IF dbo.ValidPassword(@Password) = 103
-    BEGIN
-        RAISERROR('Password must contain at least one number.', 16, 1);
-        RETURN;
-    END
-	IF dbo.ValidPassword(@Password) = 104
-    BEGIN
-        RAISERROR('Password must contain at least one special character.', 16, 1);
-        RETURN;
-    END
-	IF dbo.ValidPassword(@Password) = 106
-    BEGIN
-        RAISERROR('Password must be at least 6 characters long.', 16, 1);
-        RETURN;
-    END
+	DECLARE @PasswordErrorCode INT;
+	SET @PasswordErrorCode = dbo.ValidPassword(@Password);
+
+	IF @PasswordErrorCode <> 1
+	BEGIN 
+		DECLARE @ErrorMessage VARCHAR(255)
+		SET @ErrorMessage = dbo.ErrorMassege(@PasswordErrorCode);
+		RAISERROR (@ErrorMessage,16,1);
+		RETURN;
+	END
 
 	IF dbo.ValidEmail(@Email) = 0
 		BEGIN
@@ -165,10 +194,12 @@ PRINT 'User signed up successfully';
 END;
 GO
 
-exec SingUpUser 'samaul23','@SA2SDF','md','samaul','sama1AulA2@gmail.com','098765434','jhenaidah','admin';
-go
-select * from SignUp;
-go
+exec SingUpUser 'samaul','@Sam5Ul#','md','samaul','samaul@gmail.com','098765434','jhenaidah','admin';
+GO
+
+
+--select * from SignUp;
+--go
 --sign in 
 
 CREATE TABLE SignIn(
@@ -180,10 +211,11 @@ CREATE TABLE SignIn(
 );
 GO
 
-SELECT * FROM SignIn;
 
 --Verify Login
 
+--drop procedure VerifyLogin;
+--go
 CREATE PROCEDURE VerifyLogin
 @UserName VARCHAR(255),
 @Password VARCHAR(255)
@@ -193,7 +225,13 @@ BEGIN
 	DECLARE @StoreSalt VARCHAR(16);
 	DECLARE @PasswordHash VARCHAR(64);
 
-	SELECT @StoredPasswordHash=Password , @StoreSalt=Salt
+	IF EXISTS (SELECT 1 FROM SignIn WHERE @UserName= UserName)
+	BEGIN
+		RAISERROR ('Alreay sing in ',16,1);
+		RETURN;
+	END
+
+	SELECT @StoredPasswordHash=Password, @StoreSalt=Salt
 	FROM SignUp
 	WHERE UserName=@UserName;
 
@@ -205,8 +243,6 @@ BEGIN
 
 	SET @PasswordHash = HASHBYTES('SHA2_256', @Password + CAST(@StoreSalt AS VARCHAR(16)));
 
-	  --SET @PasswordHash = HASHBYTES('SHA2_256', @Password + CAST (@StoreSalt AS VARCHAR(16)));
-	--SET @StoredPasswordHash = HASHBYTES('SHA2_256', @Password + CAST(@StoreSalt AS VARCHAR(64)));
 	IF @PasswordHash = @StoredPasswordHash
 	BEGIN
 		INSERT INTO SignIn (UserName,SignInTime,SignOutTime)
@@ -217,11 +253,13 @@ BEGIN
 		BEGIN
 			SELECT 'Invalid username or password' AS Message;
 		END
-	END;
-	go
-
+END;
+GO
+--sign in 
 EXEC VerifyLogin 'samaul','@Sam5Ul#';
 go
+
+
 
 
 
