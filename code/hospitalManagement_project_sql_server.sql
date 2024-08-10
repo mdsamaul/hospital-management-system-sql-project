@@ -117,7 +117,8 @@ signup table
 	Role,
 	SignUpDate
 */
-
+DROP table SignUp;
+go
 CREATE TABLE SignUp(
 	SignUpID INT PRIMARY KEY IDENTITY(101,1) NOT NULL,
 	UserName VARCHAR(255) NOT NULL UNIQUE,
@@ -128,8 +129,9 @@ CREATE TABLE SignUp(
 	Email VARCHAR(255) NOT NULL UNIQUE,
 	Phone VARCHAR(255),
 	Address VARCHAR(255),
-	Role VARCHAR(255) NOT NULL,
-	SignUpDate DATETIME DEFAULT GETDATE()
+	RoleId INT NOT NULL,
+	SignUpDate DATETIME DEFAULT GETDATE(),
+	FOREIGN KEY (RoleId) REFERENCES Roles(RoleId)
 );
 GO
 
@@ -144,7 +146,7 @@ CREATE PROCEDURE SingUpUser
 @Email VARCHAR(255),
 @Phone VARCHAR(20),
 @Address VARCHAR(255),
-@Role VARCHAR(50)
+@RoleId INT
 AS
 BEGIN
 	
@@ -187,14 +189,14 @@ BEGIN
 
 	SET @PasswordHash =HASHBYTES('SHA2_256', @Password + CAST (@Salt AS VARCHAR(16)));
 
-	INSERT INTO SignUp (UserName, Password, Salt, FirstName, LastName, Email, Phone, Address, Role, SignUpDate)
-    VALUES (@UserName, @PasswordHash, @Salt, @FirstName, @LastName, @Email, @Phone, @Address, @Role, GETDATE());
+	INSERT INTO SignUp (UserName, Password, Salt, FirstName, LastName, Email, Phone, Address, RoleId, SignUpDate)
+    VALUES (@UserName, @PasswordHash, @Salt, @FirstName, @LastName, @Email, @Phone, @Address, @RoleId, GETDATE());
 
 PRINT 'User signed up successfully';
 END;
 GO
 
-exec SingUpUser 'samaul','@Sam5Ul#','md','samaul','samaul@gmail.com','098765434','jhenaidah','admin';
+exec SingUpUser 'samaul','@Sam5Ul#','md','samaul','samaul@gmail.com','098765434','jhenaidah',101;
 GO
 
 
@@ -269,11 +271,35 @@ go
 CREATE TABLE Roles
 (
 	RoleId INT IDENTITY(101,1) PRIMARY KEY NOT NULL,
-	RoleName VARCHAR(20) NOT NULL
+	RoleName VARCHAR(20) NOT NULL,
+	Description VARCHAR(50),
+	CreateAt DATETIME DEFAULT GETDATE(),
+	UpdateAt DATETIME DEFAULT GETDATE()
 );
 GO
 
 
+--permissions table
+CREATE TABLE Permissions(
+	PermissionId INT PRIMARY KEY IDENTITY(1,1),
+	PermissionName VARCHAR(50) NOT NULL UNIQUE,
+	Description VARCHAR(255),
+	CreateAt DATETIME DEFAULT GETDATE(),
+	UpdateAt DATETIME DEFAULT GETDATE()
+);
+GO
+
+
+--Role permissions table
+CREATE TABLE RolePermissions(
+	RolePermissinosId INT NOT NULL PRIMARY KEY IDENTITY(101,1),
+	RoleId INT NOT NULL,
+	PermissionId INT NOT NULL,
+	IsGranted BIT,
+	FOREIGN KEY (RoleId) REFERENCES Roles(RoleId),
+	FOREIGN KEY (PermissionId) REFERENCES Permissions(PermissionId)
+);
+GO
 --admin table
 CREATE TABLE Admin
 (
